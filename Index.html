@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Consultazione Mappa</title>
+    <style>
+      body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+      .map-container { position: relative; height: 100vh; width: 100vw; }
+      
+      .map-iframe { 
+        height: 100%; width: 100%; border: none; 
+        pointer-events: none; /* Blocca il touch per non far muovere la mappa */
+      }
+      
+      .glass-pane { 
+        position: absolute; top: 0; left: 0; 
+        width: 100%; height: 100%; z-index: 10; 
+        background: rgba(255, 255, 255, 0); 
+      }
+
+      /* Il Pin Rosso al centro */
+      .center-pin {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -100%);
+        z-index: 20; width: 40px; height: 40px;
+        pointer-events: none;
+        filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.4));
+      }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+      
+      <!-- Vetro protettivo -->
+      <div class="glass-pane"></div>
+      
+      <!-- Pin SVG -->
+      <div class="center-pin">
+        <svg viewBox="0 0 24 24" fill="#DB4437" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+      
+      <!-- L'iframe vuoto che verrà riempito da JavaScript -->
+      <iframe id="googleMap" class="map-iframe" src=""></iframe>
+
+    </div>
+
+    <script>
+        // 1. Legge le coordinate dall'URL (es. ?lat=39.5&lng=8.5)
+        const urlParams = new URLSearchParams(window.location.search);
+        const lat = urlParams.get('lat') || '39.511889'; // Default in caso di errore
+        const lng = urlParams.get('lng') || '8.547901';
+
+        // 2. Costruisce il link della tua My Maps con le coordinate dinamiche
+        const myMapsId = "1lQVisgwxED-JnABZDTxeDWWy5c52AdA";
+        const mapUrl = `https://www.google.com/maps/d/embed?mid=${myMapsId}&ll=${lat},${lng}&z=18`;
+
+        // 3. Inserisce il link nell'iframe
+        document.getElementById('googleMap').src = mapUrl;
+    </script>
+</body>
+</html>
