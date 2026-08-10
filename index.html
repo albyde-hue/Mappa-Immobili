@@ -99,6 +99,18 @@
       .close-btn:hover { background-color: #c0392b; }
       .close-btn:active { transform: translateY(1px); }
 
+      /* --- REGOLE PER SMARTPHONE --- */
+      @media (max-width: 768px) {
+        .close-btn {
+          display: none !important; /* Nasconde il tasto Chiudi sui telefoni */
+        }
+        
+        /* Espande il testo per occupare lo spazio lasciato libero dal tasto */
+        .header-info {
+          max-width: 100%; 
+        }
+      }
+
     </style>
 </head>
 <body>
@@ -141,7 +153,7 @@
         // 2. Nasconde all'utente la lunga stringa di parametri nell'URL
         window.history.replaceState(null, null, window.location.pathname);
 
-        // 3. Carica la tua mappa di Google My Maps
+        // 3. Carica la tua mappa di Google My Maps (se vuoi puoi cambiare z=18 per lo zoom)
         const myMapsId = "1lQVisgwxED-JnABZDTxeDWWy5c52AdA";
         const mapUrl = `https://www.google.com/maps/d/embed?mid=${myMapsId}&ll=${lat},${lng}&z=18`;
         document.getElementById('googleMap').src = mapUrl;
@@ -156,12 +168,12 @@
             document.getElementById('displayLocalita').style.display = 'none';
         }
 
-        // 5. Tasto Chiudi (Versione Avanzata)
+        // 5. Tasto Chiudi (Versione Avanzata per PC)
         document.getElementById('closeButton').onclick = function() {
-          // Tenta di chiudere direttamente la scheda (funziona spesso su PC)
+          // Tenta di chiudere direttamente la scheda
           window.close();
           
-          // Se la chiusura fallisce, tenta di tornare indietro (funziona se non è stata aperta una nuova scheda)
+          // Se la chiusura fallisce, tenta di tornare indietro
           setTimeout(function() {
              window.history.back();
           }, 100);
