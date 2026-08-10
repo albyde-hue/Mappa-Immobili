@@ -149,13 +149,14 @@
         const idVal = urlParams.get('id') || 'N/D';
         const comuneVal = urlParams.get('comune') || 'N/D';
         const localitaVal = urlParams.get('localita') || 'N/D';
+        const zoomVal = urlParams.get('zoom') || '18'; // <-- NUOVO: legge lo zoom o usa 18 come base
 
         // 2. Nasconde all'utente la lunga stringa di parametri nell'URL
         window.history.replaceState(null, null, window.location.pathname);
 
-        // 3. Carica la tua mappa di Google My Maps (se vuoi puoi cambiare z=18 per lo zoom)
+        // 3. Carica la tua mappa di Google My Maps con lo zoom dinamico
         const myMapsId = "1lQVisgwxED-JnABZDTxeDWWy5c52AdA";
-        const mapUrl = `https://www.google.com/maps/d/embed?mid=${myMapsId}&ll=${lat},${lng}&z=18`;
+        const mapUrl = `https://www.google.com/maps/d/embed?mid=${myMapsId}&ll=${lat},${lng}&z=${zoomVal}`;
         document.getElementById('googleMap').src = mapUrl;
 
         // 4. Inserisce i testi letti da AppSheet nella testata
