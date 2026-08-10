@@ -156,9 +156,15 @@
             document.getElementById('displayLocalita').style.display = 'none';
         }
 
-        // 5. Tasto Chiudi
+        // 5. Tasto Chiudi (Versione Avanzata)
         document.getElementById('closeButton').onclick = function() {
-          window.history.back();
+          // Tenta di chiudere direttamente la scheda (funziona spesso su PC)
+          window.close();
+          
+          // Se la chiusura fallisce, tenta di tornare indietro (funziona se non è stata aperta una nuova scheda)
+          setTimeout(function() {
+             window.history.back();
+          }, 100);
         };
     </script>
 </body>
