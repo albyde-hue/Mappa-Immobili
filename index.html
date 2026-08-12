@@ -12,16 +12,14 @@
 
     <style>
         /*
-         * IMPOSTAZIONI GENERALI
+         * Impostazioni generali
          */
         html,
         body {
             margin: 0;
             padding: 0;
-
             width: 100%;
             height: 100%;
-
             overflow: hidden;
 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -29,58 +27,33 @@
         }
 
         /*
-         * Contenitore principale della pagina.
+         * Contenitore principale
          */
-        .map-container {
+        .page-wrapper {
             position: relative;
 
             width: 100vw;
             height: 100vh;
 
             overflow: hidden;
+        }
 
-            background: #ffffff;
+        .map-container {
+            position: relative;
+
+            width: 100vw;
+            height: 100vh;
         }
 
         /*
-         * LIVELLO MAPPA
+         * Iframe della mappa.
          *
-         * Questo livello viene ingrandito o ridotto con transform: scale().
-         * Il punto di trasformazione è il centro esatto della finestra.
-         *
-         * In questo modo il centro della mappa, il pin e le coordinate
-         * rimangono sempre nella stessa posizione.
-         */
-        .map-layer {
-            position: absolute;
-
-            top: 0;
-            left: 0;
-
-            width: 100%;
-            height: 100%;
-
-            z-index: 1;
-
-            overflow: hidden;
-
-            transform-origin: center center;
-            transform: scale(1);
-
-            background: #ffffff;
-
-            transition: transform 0.15s ease-out;
-        }
-
-        /*
-         * IFRAME GOOGLE MY MAPS
-         *
-         * pointer-events: none mantiene bloccati:
-         * - trascinamento;
+         * pointer-events: none impedisce:
+         * - trascinamento della mappa;
          * - pan;
-         * - zoom nativo della mappa;
+         * - zoom nativo;
          * - clic sui poligoni;
-         * - interazioni con i layer.
+         * - interazione diretta con My Maps.
          */
         .map-iframe {
             position: absolute;
@@ -97,10 +70,10 @@
         }
 
         /*
-         * VETRO PROTETTIVO
+         * Vetro protettivo trasparente.
          *
-         * Copre la mappa dalla parte inferiore della testata.
-         * Rimane trasparente, ma impedisce ogni interazione.
+         * Blocca le interazioni dalla parte sottostante
+         * la testata.
          */
         .glass-pane {
             position: absolute;
@@ -114,15 +87,33 @@
             z-index: 10;
 
             background: rgba(255, 255, 255, 0);
-
-            pointer-events: auto;
         }
 
         /*
-         * TESTATA BLU
-         *
-         * È posizionata fuori dal map-layer.
-         * Pertanto non viene ingrandita o ridotta durante lo zoom.
+         * Pin rosso centrale
+         */
+        .center-pin {
+            position: absolute;
+
+            top: 50%;
+            left: 50%;
+
+            width: 35px;
+            height: 35px;
+
+            transform: translate(-50%, -100%);
+
+            z-index: 20;
+
+            pointer-events: none;
+
+            filter: drop-shadow(
+                0px 4px 3px rgba(0, 0, 0, 0.3)
+            );
+        }
+
+        /*
+         * Testata blu
          */
         .custom-header {
             position: absolute;
@@ -149,7 +140,7 @@
         }
 
         /*
-         * Informazioni dell'immobile.
+         * Informazioni dell'immobile
          */
         .header-info {
             display: flex;
@@ -199,40 +190,10 @@
         }
 
         /*
-         * PIN CENTRALE
+         * Controllo zoom della mappa.
          *
-         * Il pin è fuori dal map-layer e quindi resta sempre della
-         * stessa dimensione e nella stessa posizione.
-         *
-         * Il centro del pin coincide con il centro della mappa.
-         */
-        .center-pin {
-            position: absolute;
-
-            top: 50%;
-            left: 50%;
-
-            width: 35px;
-            height: 35px;
-
-            transform: translate(-50%, -100%);
-
-            z-index: 120;
-
-            pointer-events: none;
-
-            filter: drop-shadow(
-                0 4px 3px rgba(0, 0, 0, 0.3)
-            );
-        }
-
-        /*
-         * CONTROLLO ZOOM
-         *
-         * Fuori dal map-layer:
-         * - resta sempre in alto a sinistra;
-         * - non cambia dimensione;
-         * - non viene ingrandito insieme alla mappa.
+         * Il controllo è fisso in alto a sinistra,
+         * subito sotto la testata blu.
          */
         .zoom-control {
             position: fixed;
@@ -308,7 +269,7 @@
         }
 
         /*
-         * PULSANTE CHIUDI
+         * Pulsante Chiudi
          */
         .close-btn {
             flex: 0 0 auto;
@@ -340,7 +301,7 @@
         }
 
         /*
-         * SMARTPHONE
+         * Adattamento smartphone
          */
         @media (max-width: 768px) {
             .custom-header {
@@ -393,110 +354,106 @@
 
 <body>
 
-    <div class="map-container">
+    <!-- Contenitore della mappa -->
+    <div
+        id="pageWrapper"
+        class="page-wrapper">
 
-        <!--
-         * LIVELLO MAPPA
-         *
-         * Solo questo elemento viene sottoposto allo zoom.
-         * La trasformazione avviene dal centro della finestra.
-         -->
-        <div
-            id="mapLayer"
-            class="map-layer">
+        <div class="map-container">
 
+            <!-- Testata -->
+            <div class="custom-header">
+
+                <div class="header-info">
+                    <span
+                        class="info-id"
+                        id="displayId">
+                        ID: N/D
+                    </span>
+
+                    <span
+                        class="info-comune"
+                        id="displayComune">
+                        Comune: N/D
+                    </span>
+
+                    <span
+                        class="info-localita"
+                        id="displayLocalita">
+                        Località: N/D
+                    </span>
+                </div>
+
+                <button
+                    class="close-btn"
+                    id="closeButton"
+                    type="button">
+                    CHIUDI
+                </button>
+            </div>
+
+            <!-- Vetro protettivo -->
+            <div class="glass-pane"></div>
+
+            <!-- Pin centrale -->
+            <div
+                class="center-pin"
+                aria-hidden="true">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="#DB4437"
+                    xmlns="http://www.w3.org/2000/svg">
+
+                    <path
+                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                    />
+                </svg>
+            </div>
+
+            <!-- Mappa Google My Maps -->
             <iframe
                 id="googleMap"
                 class="map-iframe"
                 title="Mappa del patrimonio immobiliare"
                 src="">
             </iframe>
+
         </div>
+    </div>
 
-        <!-- Vetro protettivo -->
-        <div class="glass-pane"></div>
+    <!-- Controlli zoom in alto a sinistra -->
+    <div
+        id="zoomControl"
+        class="zoom-control"
+        aria-label="Controlli zoom mappa">
 
-        <!-- Testata non soggetta allo zoom -->
-        <div class="custom-header">
+        <button
+            id="zoomOutButton"
+            type="button"
+            aria-label="Riduci zoom mappa"
+            title="Riduci zoom mappa">
+            −
+        </button>
 
-            <div class="header-info">
-                <span
-                    class="info-id"
-                    id="displayId">
-                    ID: N/D
-                </span>
+        <span
+            id="zoomLabel"
+            class="zoom-label">
+            Z18
+        </span>
 
-                <span
-                    class="info-comune"
-                    id="displayComune">
-                    Comune: N/D
-                </span>
-
-                <span
-                    class="info-localita"
-                    id="displayLocalita">
-                    Località: N/D
-                </span>
-            </div>
-
-            <button
-                class="close-btn"
-                id="closeButton"
-                type="button">
-                CHIUDI
-            </button>
-        </div>
-
-        <!-- Pin fisso al centro -->
-        <div
-            class="center-pin"
-            aria-hidden="true">
-
-            <svg
-                viewBox="0 0 24 24"
-                fill="#DB4437"
-                xmlns="http://www.w3.org/2000/svg">
-
-                <path
-                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                />
-            </svg>
-        </div>
-
-        <!-- Controlli zoom fissi in alto a sinistra -->
-        <div
-            id="zoomControl"
-            class="zoom-control"
-            aria-label="Controlli zoom mappa">
-
-            <button
-                id="zoomOutButton"
-                type="button"
-                aria-label="Riduci zoom"
-                title="Riduci zoom">
-                −
-            </button>
-
-            <span
-                id="zoomLabel"
-                class="zoom-label">
-                100%
-            </span>
-
-            <button
-                id="zoomInButton"
-                type="button"
-                aria-label="Aumenta zoom"
-                title="Aumenta zoom">
-                +
-            </button>
-        </div>
-
+        <button
+            id="zoomInButton"
+            type="button"
+            aria-label="Aumenta zoom mappa"
+            title="Aumenta zoom mappa">
+            +
+        </button>
     </div>
 
     <script>
         /*
-         * LETTURA PARAMETRI APPSHEET
+         * Lettura dei parametri passati da AppSheet
          */
         const urlParams =
             new URLSearchParams(window.location.search);
@@ -516,12 +473,9 @@
         const localitaVal =
             urlParams.get('localita') || 'N/D';
 
-        const initialMapZoom =
-            urlParams.get('zoom') || '18';
-
 
         /*
-         * IDENTIFICATIVO MY MAPS
+         * Identificativo Google My Maps
          */
         const myMapsId =
             '1lQVisgwxED-JnABZDTxeDWWy5c52AdA';
@@ -529,187 +483,88 @@
         const googleMap =
             document.getElementById('googleMap');
 
-        const mapLayer =
-            document.getElementById('mapLayer');
+
+        /*
+         * Configurazione dello zoom cartografico
+         *
+         * Il livello più alto mostra maggiori dettagli.
+         * Il livello più basso mostra un'area più ampia.
+         */
+        const MIN_MAP_ZOOM = 1;
+        const MAX_MAP_ZOOM = 21;
+
+        let currentMapZoom =
+            Number.parseInt(
+                urlParams.get('zoom') || '18',
+                10
+            );
+
+        if (!Number.isFinite(currentMapZoom)) {
+            currentMapZoom = 18;
+        }
+
+        currentMapZoom =
+            Math.min(
+                MAX_MAP_ZOOM,
+                Math.max(MIN_MAP_ZOOM, currentMapZoom)
+            );
 
 
         /*
-         * CONFIGURAZIONE ZOOM VISIVO DELLA MAPPA
-         *
-         * 1.00 = 100%
-         * 1.10 = 110%
-         * 0.90 = 90%
+         * Aggiornamento dell'etichetta e dei pulsanti
          */
-        const MIN_MAP_ZOOM = 0.75;
-        const MAX_MAP_ZOOM = 2.00;
-        const MAP_ZOOM_STEP = 0.10;
+        function updateZoomControls() {
+            document
+                .getElementById('zoomLabel')
+                .innerText = 'Z' + currentMapZoom;
 
-        let mapZoom = 1.00;
+            document
+                .getElementById('zoomOutButton')
+                .disabled =
+                currentMapZoom <= MIN_MAP_ZOOM;
+
+            document
+                .getElementById('zoomInButton')
+                .disabled =
+                currentMapZoom >= MAX_MAP_ZOOM;
+        }
 
 
         /*
-         * CARICAMENTO MAPPA
+         * Caricamento o ricaricamento della mappa.
          *
-         * ll contiene le coordinate dell'immobile.
-         * z imposta lo zoom iniziale di My Maps.
-         *
-         * Lo zoom dei pulsanti viene applicato successivamente
-         * al map-layer tramite CSS, senza ricaricare l'iframe.
+         * Il parametro z viene aggiornato a ogni pressione
+         * dei pulsanti + o −.
          */
-        function loadMap() {
+        function loadMapWithCurrentZoom() {
             const mapUrl =
                 'https://www.google.com/maps/d/embed' +
                 '?mid=' + encodeURIComponent(myMapsId) +
                 '&ll=' + encodeURIComponent(lat + ',' + lng) +
-                '&z=' + encodeURIComponent(initialMapZoom);
+                '&z=' + encodeURIComponent(currentMapZoom);
 
             googleMap.src = mapUrl;
+
+            updateZoomControls();
         }
 
 
         /*
-         * APPLICA ZOOM ALLA SOLA MAPPA
+         * Aumento dello zoom:
          *
-         * transform-origin: center center garantisce che:
-         * - il centro della mappa resti fermo;
-         * - il pin resti sulle coordinate dell'immobile;
-         * - la testata non venga ingrandita;
-         * - i controlli non vengano ingranditi.
+         * Z18 -> Z19 -> Z20
+         *
+         * La mappa dovrebbe mostrare progressivamente
+         * maggiori dettagli e un'area più ristretta.
          */
-        function applyMapZoom() {
-            mapLayer.style.transform =
-                'scale(' + mapZoom + ')';
-
-            document.getElementById('zoomLabel').innerText =
-                Math.round(mapZoom * 100) + '%';
-
-            document.getElementById('zoomOutButton').disabled =
-                mapZoom <= MIN_MAP_ZOOM;
-
-            document.getElementById('zoomInButton').disabled =
-                mapZoom >= MAX_MAP_ZOOM;
-        }
-
-
-        /*
-         * MODIFICA ZOOM
-         */
-        function changeMapZoom(amount) {
-            let nextZoom =
-                mapZoom + amount;
-
-            nextZoom =
-                Math.max(MIN_MAP_ZOOM, nextZoom);
-
-            nextZoom =
-                Math.min(MAX_MAP_ZOOM, nextZoom);
-
-            nextZoom =
-                Math.round(nextZoom * 100) / 100;
-
-            if (nextZoom !== mapZoom) {
-                mapZoom = nextZoom;
-                applyMapZoom();
+        function increaseMapZoom() {
+            if (currentMapZoom < MAX_MAP_ZOOM) {
+                currentMapZoom++;
+                loadMapWithCurrentZoom();
             }
         }
 
 
         /*
-         * INIZIALIZZAZIONE
-         */
-        window.history.replaceState(
-            null,
-            null,
-            window.location.pathname
-        );
-
-        loadMap();
-
-        applyMapZoom();
-
-
-        /*
-         * TESTATA
-         */
-        document.getElementById('displayId').innerText =
-            'ID: ' + idVal;
-
-        document.getElementById('displayComune').innerText =
-            comuneVal;
-
-
-        /*
-         * LOCALITÀ
-         */
-        if (
-            localitaVal !== 'N/D' &&
-            localitaVal.trim() !== ''
-        ) {
-            document.getElementById('displayLocalita').innerText =
-                localitaVal;
-        } else {
-            document.getElementById('displayLocalita').style.display =
-                'none';
-        }
-
-
-        /*
-         * PULSANTI ZOOM
-         */
-        document
-            .getElementById('zoomOutButton')
-            .addEventListener('click', function() {
-                changeMapZoom(-MAP_ZOOM_STEP);
-            });
-
-        document
-            .getElementById('zoomInButton')
-            .addEventListener('click', function() {
-                changeMapZoom(MAP_ZOOM_STEP);
-            });
-
-
-        /*
-         * CTRL + ROTELLINA DEL MOUSE
+         * Riduzione dello zoom:
          *
-         * Questa funzione emula il comportamento richiesto:
-         * tenendo premuto CTRL e usando la rotellina,
-         * viene ingrandito o ridotto il solo livello mappa.
-         */
-        window.addEventListener(
-            'wheel',
-            function(event) {
-                if (!event.ctrlKey) {
-                    return;
-                }
-
-                event.preventDefault();
-
-                if (event.deltaY < 0) {
-                    changeMapZoom(MAP_ZOOM_STEP);
-                } else {
-                    changeMapZoom(-MAP_ZOOM_STEP);
-                }
-            },
-            {
-                passive: false
-            }
-        );
-
-
-        /*
-         * PULSANTE CHIUDI
-         */
-        document
-            .getElementById('closeButton')
-            .addEventListener('click', function() {
-                window.close();
-
-                setTimeout(function() {
-                    window.history.back();
-                }, 100);
-            });
-    </script>
-
-</body>
-</html>
