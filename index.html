@@ -18,11 +18,14 @@
         body {
             margin: 0;
             padding: 0;
+
             width: 100%;
             height: 100%;
+
             overflow: hidden;
 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
             background: #ffffff;
         }
 
@@ -48,12 +51,8 @@
         /*
          * Iframe della mappa.
          *
-         * pointer-events: none impedisce:
-         * - trascinamento della mappa;
-         * - pan;
-         * - zoom nativo;
-         * - clic sui poligoni;
-         * - interazione diretta con My Maps.
+         * Le interazioni native dell'iframe sono disabilitate
+         * per impedire pan, trascinamento, zoom e clic sui poligoni.
          */
         .map-iframe {
             position: absolute;
@@ -72,8 +71,8 @@
         /*
          * Vetro protettivo trasparente.
          *
-         * Blocca le interazioni dalla parte sottostante
-         * la testata.
+         * Blocca le interazioni sulla mappa dalla parte
+         * sottostante la testata.
          */
         .glass-pane {
             position: absolute;
@@ -190,10 +189,10 @@
         }
 
         /*
-         * Controllo zoom della mappa.
+         * Controllo zoom.
          *
          * Il controllo è fisso in alto a sinistra,
-         * subito sotto la testata blu.
+         * sotto la testata blu.
          */
         .zoom-control {
             position: fixed;
@@ -354,7 +353,7 @@
 
 <body>
 
-    <!-- Contenitore della mappa -->
+    <!-- Contenitore principale -->
     <div
         id="pageWrapper"
         class="page-wrapper">
@@ -439,7 +438,7 @@
         <span
             id="zoomLabel"
             class="zoom-label">
-            Z18
+            Z15
         </span>
 
         <button
@@ -475,7 +474,7 @@
 
 
         /*
-         * Identificativo Google My Maps
+         * Identificativo della mappa Google My Maps
          */
         const myMapsId =
             '1lQVisgwxED-JnABZDTxeDWWy5c52AdA';
@@ -487,20 +486,32 @@
         /*
          * Configurazione dello zoom cartografico
          *
-         * Il livello più alto mostra maggiori dettagli.
-         * Il livello più basso mostra un'area più ampia.
+         * Z15 è il livello minimo.
+         * Non sarà mai possibile scendere a Z14,
+         * Z13 o a livelli inferiori.
          */
-        const MIN_MAP_ZOOM = 1;
+        const MIN_MAP_ZOOM = 15;
         const MAX_MAP_ZOOM = 21;
+        const DEFAULT_MAP_ZOOM = 15;
 
+
+        /*
+         * Legge l'eventuale valore zoom passato da AppSheet.
+         *
+         * Se AppSheet non passa alcun valore:
+         * la mappa parte da Z15.
+         *
+         * Se AppSheet passa un valore inferiore a Z15:
+         * viene automaticamente portato a Z15.
+         */
         let currentMapZoom =
             Number.parseInt(
-                urlParams.get('zoom') || '18',
+                urlParams.get('zoom') || DEFAULT_MAP_ZOOM,
                 10
             );
 
         if (!Number.isFinite(currentMapZoom)) {
-            currentMapZoom = 18;
+            currentMapZoom = DEFAULT_MAP_ZOOM;
         }
 
         currentMapZoom =
@@ -511,12 +522,13 @@
 
 
         /*
-         * Aggiornamento dell'etichetta e dei pulsanti
+         * Aggiornamento del testo e dello stato dei pulsanti
          */
         function updateZoomControls() {
             document
                 .getElementById('zoomLabel')
-                .innerText = 'Z' + currentMapZoom;
+                .innerText =
+                'Z' + currentMapZoom;
 
             document
                 .getElementById('zoomOutButton')
@@ -531,10 +543,7 @@
 
 
         /*
-         * Caricamento o ricaricamento della mappa.
-         *
-         * Il parametro z viene aggiornato a ogni pressione
-         * dei pulsanti + o −.
+         * Carica o ricarica la mappa con il livello attuale
          */
         function loadMapWithCurrentZoom() {
             const mapUrl =
@@ -543,28 +552,133 @@
                 '&ll=' + encodeURIComponent(lat + ',' + lng) +
                 '&z=' + encodeURIComponent(currentMapZoom);
 
-            googleMap.src = mapUrl;
+            googleMap.src =
+                mapUrl;
 
             updateZoomControls();
         }
 
 
         /*
-         * Aumento dello zoom:
+         * Aumenta lo zoom.
          *
-         * Z18 -> Z19 -> Z20
-         *
-         * La mappa dovrebbe mostrare progressivamente
-         * maggiori dettagli e un'area più ristretta.
+         * Esempio:
+         * Z15 -> Z16 -> Z17 -> Z18
          */
         function increaseMapZoom() {
             if (currentMapZoom < MAX_MAP_ZOOM) {
-                currentMapZoom++;
+                currentMapZoom =
+                    currentMapZoom + 1;
+
                 loadMapWithCurrentZoom();
             }
         }
 
 
         /*
-         * Riduzione dello zoom:
+         * Riduce lo zoom.
          *
+         * Esempio:
+         * Z18 -> Z17 -> Z16 -> Z15
+         *
+         * A Z15 il pulsante viene disabilitato.
+         */
+        function decreaseMapZoom() {
+            if (currentMapZoom > MIN_MAP_ZOOM) {
+                currentMapZoom =
+                    currentMapZoom - 1;
+
+                loadMapWithCurrentZoom();
+            }
+        }
+
+
+        /*
+         * Nasconde i parametri dall'URL del browser
+         */
+        window.history.replaceState(
+            null,
+            null,
+            window.location.pathname
+        );
+
+
+        /*
+         * Caricamento iniziale della mappa
+         */
+        loadMapWithCurrentZoom();
+
+
+        /*
+         * Valorizzazione della testata
+         */
+        document
+            .getElementById('displayId')
+            .innerText =
+            'ID: ' + idVal;
+
+        document
+            .getElementById('displayComune')
+            .innerText =
+            comuneVal;
+
+
+        /*
+         * Gestione del campo Località
+         */
+        if (
+            localitaVal !== 'N/D' &&
+            localitaVal.trim() !== ''
+        ) {
+            document
+                .getElementById('displayLocalita')
+                .innerText =
+                localitaVal;
+        } else {
+            document
+                .getElementById('displayLocalita')
+                .style.display =
+                'none';
+        }
+
+
+        /*
+         * Eventi dei pulsanti zoom
+         */
+        document
+            .getElementById('zoomInButton')
+            .addEventListener(
+                'click',
+                increaseMapZoom
+            );
+
+        document
+            .getElementById('zoomOutButton')
+            .addEventListener(
+                'click',
+                decreaseMapZoom
+            );
+
+
+        /*
+         * Pulsante Chiudi
+         */
+        document
+            .getElementById('closeButton')
+            .addEventListener(
+                'click',
+                function() {
+                    window.close();
+
+                    setTimeout(
+                        function() {
+                            window.history.back();
+                        },
+                        100
+                    );
+                }
+            );
+    </script>
+
+</body>
+</html>
