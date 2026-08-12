@@ -11,9 +11,6 @@
     >
 
     <style>
-        /*
-         * Impostazioni generali
-         */
         html,
         body {
             margin: 0;
@@ -29,9 +26,6 @@
             background: #ffffff;
         }
 
-        /*
-         * Contenitore principale
-         */
         .page-wrapper {
             position: relative;
 
@@ -49,10 +43,13 @@
         }
 
         /*
-         * Iframe della mappa.
+         * Mappa Google My Maps.
          *
-         * Le interazioni native dell'iframe sono disabilitate
-         * per impedire pan, trascinamento, zoom e clic sui poligoni.
+         * L'interazione nativa è disabilitata per impedire:
+         * - trascinamento;
+         * - pan;
+         * - zoom nativo;
+         * - clic sui poligoni.
          */
         .map-iframe {
             position: absolute;
@@ -70,9 +67,6 @@
 
         /*
          * Vetro protettivo trasparente.
-         *
-         * Blocca le interazioni sulla mappa dalla parte
-         * sottostante la testata.
          */
         .glass-pane {
             position: absolute;
@@ -89,7 +83,7 @@
         }
 
         /*
-         * Pin rosso centrale
+         * Pin rosso centrale.
          */
         .center-pin {
             position: absolute;
@@ -112,7 +106,7 @@
         }
 
         /*
-         * Testata blu
+         * Testata blu.
          */
         .custom-header {
             position: absolute;
@@ -139,7 +133,7 @@
         }
 
         /*
-         * Informazioni dell'immobile
+         * Informazioni dell'immobile.
          */
         .header-info {
             display: flex;
@@ -189,16 +183,17 @@
         }
 
         /*
-         * Controllo zoom.
+         * Controlli zoom.
          *
-         * Il controllo è fisso in alto a sinistra,
-         * sotto la testata blu.
+         * Posizionati in alto a destra,
+         * subito sotto la testata blu.
          */
         .zoom-control {
             position: fixed;
 
             top: 85px;
-            left: 15px;
+            right: 15px;
+            left: auto;
 
             z-index: 300;
 
@@ -261,14 +256,14 @@
 
             color: #ffffff;
 
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
             letter-spacing: 0.4px;
             text-align: center;
         }
 
         /*
-         * Pulsante Chiudi
+         * Pulsante Chiudi.
          */
         .close-btn {
             flex: 0 0 auto;
@@ -300,7 +295,7 @@
         }
 
         /*
-         * Adattamento smartphone
+         * Adattamento smartphone.
          */
         @media (max-width: 768px) {
             .custom-header {
@@ -329,7 +324,8 @@
 
             .zoom-control {
                 top: 85px;
-                left: 10px;
+                right: 10px;
+                left: auto;
 
                 gap: 6px;
                 padding: 4px 7px;
@@ -345,7 +341,7 @@
 
             .zoom-label {
                 min-width: 46px;
-                font-size: 10px;
+                font-size: 11px;
             }
         }
     </style>
@@ -421,7 +417,7 @@
         </div>
     </div>
 
-    <!-- Controlli zoom in alto a sinistra -->
+    <!-- Controlli zoom in alto a destra -->
     <div
         id="zoomControl"
         class="zoom-control"
@@ -438,7 +434,7 @@
         <span
             id="zoomLabel"
             class="zoom-label">
-            Z15
+            0
         </span>
 
         <button
@@ -452,29 +448,101 @@
 
     <script>
         /*
-         * Lettura dei parametri passati da AppSheet
+         * Recupera un parametro dall'URL.
+         *
+         * La funzione cerca il parametro:
+         * 1. nella query string normale;
+         * 2. nell'hash dell'URL.
+         *
+         * Questo rende la lettura compatibile con diversi
+         * comportamenti di AppSheet e del browser.
          */
-        const urlParams =
-            new URLSearchParams(window.location.search);
+        function getUrlParameter(parameterName) {
+            const searchParams =
+                new URLSearchParams(window.location.search);
 
-        const lat =
-            urlParams.get('lat') || '39.511889';
+            let value =
+                searchParams.get(parameterName);
 
-        const lng =
-            urlParams.get('lng') || '8.547901';
+            if (value !== null && value !== '') {
+                return value;
+            }
 
-        const idVal =
-            urlParams.get('id') || 'N/D';
+            const hashValue =
+                window.location.hash.startsWith('#')
+                    ? window.location.hash.substring(1)
+                    : window.location.hash;
 
-        const comuneVal =
-            urlParams.get('comune') || 'N/D';
+            if (hashValue !== '') {
+                const hashParams =
+                    new URLSearchParams(
+                        hashValue.startsWith('?')
+                            ? hashValue.substring(1)
+                            : hashValue
+                    );
 
-        const localitaVal =
-            urlParams.get('localita') || 'N/D';
+                value =
+                    hashParams.get(parameterName);
+
+                if (value !== null && value !== '') {
+                    return value;
+                }
+            }
+
+            return null;
+        }
 
 
         /*
-         * Identificativo della mappa Google My Maps
+         * Lettura dei parametri passati da AppSheet.
+         *
+         * Vengono mantenuti i nomi già utilizzati:
+         * lat, lng, id, comune, localita e zoom.
+         */
+        const latParameter =
+            getUrlParameter('lat');
+
+        const lngParameter =
+            getUrlParameter('lng');
+
+        const idParameter =
+            getUrlParameter('id');
+
+        const comuneParameter =
+            getUrlParameter('comune');
+
+        const localitaParameter =
+            getUrlParameter('localita');
+
+        const zoomParameter =
+            getUrlParameter('zoom');
+
+
+        /*
+         * Valori geografici predefiniti.
+         */
+        const lat =
+            latParameter || '39.511889';
+
+        const lng =
+            lngParameter || '8.547901';
+
+
+        /*
+         * Valori testuali predefiniti.
+         */
+        const idVal =
+            idParameter || 'N/D';
+
+        const comuneVal =
+            comuneParameter || 'N/D';
+
+        const localitaVal =
+            localitaParameter || 'N/D';
+
+
+        /*
+         * Identificativo Google My Maps.
          */
         const myMapsId =
             '1lQVisgwxED-JnABZDTxeDWWy5c52AdA';
@@ -484,34 +552,32 @@
 
 
         /*
-         * Configurazione dello zoom cartografico
+         * Configurazione dello zoom.
          *
-         * Z15 è il livello minimo.
-         * Non sarà mai possibile scendere a Z14,
-         * Z13 o a livelli inferiori.
+         * Z15 è il livello originale e minimo.
+         *
+         * Z15 = 0
+         * Z16 = +1
+         * Z17 = +2
+         * Z18 = +3
          */
+        const BASE_MAP_ZOOM = 15;
         const MIN_MAP_ZOOM = 15;
         const MAX_MAP_ZOOM = 21;
-        const DEFAULT_MAP_ZOOM = 15;
 
 
         /*
-         * Legge l'eventuale valore zoom passato da AppSheet.
-         *
-         * Se AppSheet non passa alcun valore:
-         * la mappa parte da Z15.
-         *
-         * Se AppSheet passa un valore inferiore a Z15:
-         * viene automaticamente portato a Z15.
+         * Legge il valore zoom eventualmente passato da AppSheet.
          */
         let currentMapZoom =
             Number.parseInt(
-                urlParams.get('zoom') || DEFAULT_MAP_ZOOM,
+                zoomParameter || BASE_MAP_ZOOM,
                 10
             );
 
         if (!Number.isFinite(currentMapZoom)) {
-            currentMapZoom = DEFAULT_MAP_ZOOM;
+            currentMapZoom =
+                BASE_MAP_ZOOM;
         }
 
         currentMapZoom =
@@ -522,13 +588,32 @@
 
 
         /*
-         * Aggiornamento del testo e dello stato dei pulsanti
+         * Calcola l'etichetta relativa.
+         */
+        function getRelativeZoomLabel() {
+            const relativeZoom =
+                currentMapZoom - BASE_MAP_ZOOM;
+
+            if (relativeZoom > 0) {
+                return '+' + relativeZoom;
+            }
+
+            if (relativeZoom < 0) {
+                return String(relativeZoom);
+            }
+
+            return '0';
+        }
+
+
+        /*
+         * Aggiorna testo e stato dei pulsanti.
          */
         function updateZoomControls() {
             document
                 .getElementById('zoomLabel')
                 .innerText =
-                'Z' + currentMapZoom;
+                getRelativeZoomLabel();
 
             document
                 .getElementById('zoomOutButton')
@@ -543,7 +628,7 @@
 
 
         /*
-         * Carica o ricarica la mappa con il livello attuale
+         * Carica o ricarica la mappa.
          */
         function loadMapWithCurrentZoom() {
             const mapUrl =
@@ -562,8 +647,7 @@
         /*
          * Aumenta lo zoom.
          *
-         * Esempio:
-         * Z15 -> Z16 -> Z17 -> Z18
+         * 0 -> +1 -> +2 -> +3
          */
         function increaseMapZoom() {
             if (currentMapZoom < MAX_MAP_ZOOM) {
@@ -578,10 +662,9 @@
         /*
          * Riduce lo zoom.
          *
-         * Esempio:
-         * Z18 -> Z17 -> Z16 -> Z15
+         * +3 -> +2 -> +1 -> 0
          *
-         * A Z15 il pulsante viene disabilitato.
+         * Il valore non può diventare negativo.
          */
         function decreaseMapZoom() {
             if (currentMapZoom > MIN_MAP_ZOOM) {
@@ -594,23 +677,13 @@
 
 
         /*
-         * Nasconde i parametri dall'URL del browser
-         */
-        window.history.replaceState(
-            null,
-            null,
-            window.location.pathname
-        );
-
-
-        /*
-         * Caricamento iniziale della mappa
+         * Caricamento iniziale della mappa.
          */
         loadMapWithCurrentZoom();
 
 
         /*
-         * Valorizzazione della testata
+         * Valorizzazione della testata.
          */
         document
             .getElementById('displayId')
@@ -624,7 +697,7 @@
 
 
         /*
-         * Gestione del campo Località
+         * Gestione del campo Località.
          */
         if (
             localitaVal !== 'N/D' &&
@@ -643,7 +716,7 @@
 
 
         /*
-         * Eventi dei pulsanti zoom
+         * Eventi dei pulsanti zoom.
          */
         document
             .getElementById('zoomInButton')
@@ -661,7 +734,7 @@
 
 
         /*
-         * Pulsante Chiudi
+         * Pulsante Chiudi.
          */
         document
             .getElementById('closeButton')
@@ -678,6 +751,24 @@
                     );
                 }
             );
+
+
+        /*
+         * Rimuove i parametri dalla barra degli indirizzi
+         * soltanto dopo averli letti e utilizzati.
+         */
+        try {
+            window.history.replaceState(
+                null,
+                null,
+                window.location.pathname
+            );
+        } catch (error) {
+            /*
+             * Se il browser impedisce la modifica dell'URL,
+             * la pagina continua comunque a funzionare.
+             */
+        }
     </script>
 
 </body>
