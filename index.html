@@ -43,9 +43,9 @@
         }
 
         /*
-         * Iframe della mappa.
+         * Mappa Google My Maps.
          *
-         * Le interazioni native sono disabilitate per impedire:
+         * L'interazione nativa è disabilitata per impedire:
          * - trascinamento;
          * - pan;
          * - zoom nativo;
@@ -132,6 +132,9 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
         }
 
+        /*
+         * Informazioni dell'immobile.
+         */
         .header-info {
             display: flex;
             flex-direction: column;
@@ -180,10 +183,10 @@
         }
 
         /*
-         * Controllo Zoom.
+         * Controlli zoom.
          *
-         * Posizione in alto a destra,
-         * appena sotto la testata blu.
+         * Posizionati in alto a destra,
+         * subito sotto la testata blu.
          */
         .zoom-control {
             position: fixed;
@@ -414,7 +417,7 @@
         </div>
     </div>
 
-    <!-- Controlli Zoom in alto a destra -->
+    <!-- Controlli zoom in alto a destra -->
     <div
         id="zoomControl"
         class="zoom-control"
@@ -445,29 +448,101 @@
 
     <script>
         /*
-         * Lettura dei parametri passati da AppSheet.
+         * Recupera un parametro dall'URL.
+         *
+         * La funzione cerca il parametro:
+         * 1. nella query string normale;
+         * 2. nell'hash dell'URL.
+         *
+         * Questo rende la lettura compatibile con diversi
+         * comportamenti di AppSheet e del browser.
          */
-        const urlParams =
-            new URLSearchParams(window.location.search);
+        function getUrlParameter(parameterName) {
+            const searchParams =
+                new URLSearchParams(window.location.search);
 
-        const lat =
-            urlParams.get('lat') || '39.511889';
+            let value =
+                searchParams.get(parameterName);
 
-        const lng =
-            urlParams.get('lng') || '8.547901';
+            if (value !== null && value !== '') {
+                return value;
+            }
 
-        const idVal =
-            urlParams.get('id') || 'N/D';
+            const hashValue =
+                window.location.hash.startsWith('#')
+                    ? window.location.hash.substring(1)
+                    : window.location.hash;
 
-        const comuneVal =
-            urlParams.get('comune') || 'N/D';
+            if (hashValue !== '') {
+                const hashParams =
+                    new URLSearchParams(
+                        hashValue.startsWith('?')
+                            ? hashValue.substring(1)
+                            : hashValue
+                    );
 
-        const localitaVal =
-            urlParams.get('localita') || 'N/D';
+                value =
+                    hashParams.get(parameterName);
+
+                if (value !== null && value !== '') {
+                    return value;
+                }
+            }
+
+            return null;
+        }
 
 
         /*
-         * Identificativo della mappa Google My Maps.
+         * Lettura dei parametri passati da AppSheet.
+         *
+         * Vengono mantenuti i nomi già utilizzati:
+         * lat, lng, id, comune, localita e zoom.
+         */
+        const latParameter =
+            getUrlParameter('lat');
+
+        const lngParameter =
+            getUrlParameter('lng');
+
+        const idParameter =
+            getUrlParameter('id');
+
+        const comuneParameter =
+            getUrlParameter('comune');
+
+        const localitaParameter =
+            getUrlParameter('localita');
+
+        const zoomParameter =
+            getUrlParameter('zoom');
+
+
+        /*
+         * Valori geografici predefiniti.
+         */
+        const lat =
+            latParameter || '39.511889';
+
+        const lng =
+            lngParameter || '8.547901';
+
+
+        /*
+         * Valori testuali predefiniti.
+         */
+        const idVal =
+            idParameter || 'N/D';
+
+        const comuneVal =
+            comuneParameter || 'N/D';
+
+        const localitaVal =
+            localitaParameter || 'N/D';
+
+
+        /*
+         * Identificativo Google My Maps.
          */
         const myMapsId =
             '1lQVisgwxED-JnABZDTxeDWWy5c52AdA';
@@ -477,11 +552,10 @@
 
 
         /*
-         * Configurazione dello zoom cartografico.
+         * Configurazione dello zoom.
          *
-         * Z15 è lo zoom originale e il livello minimo.
+         * Z15 è il livello originale e minimo.
          *
-         * Visualizzazione relativa:
          * Z15 = 0
          * Z16 = +1
          * Z17 = +2
@@ -493,19 +567,17 @@
 
 
         /*
-         * Lettura dell'eventuale zoom passato da AppSheet.
-         *
-         * Se il valore è inferiore a Z15,
-         * viene automaticamente riportato a Z15.
+         * Legge il valore zoom eventualmente passato da AppSheet.
          */
         let currentMapZoom =
             Number.parseInt(
-                urlParams.get('zoom') || BASE_MAP_ZOOM,
+                zoomParameter || BASE_MAP_ZOOM,
                 10
             );
 
         if (!Number.isFinite(currentMapZoom)) {
-            currentMapZoom = BASE_MAP_ZOOM;
+            currentMapZoom =
+                BASE_MAP_ZOOM;
         }
 
         currentMapZoom =
@@ -516,13 +588,7 @@
 
 
         /*
-         * Calcola il valore relativo da visualizzare.
-         *
-         * Esempi:
-         * Z15 -> 0
-         * Z16 -> +1
-         * Z17 -> +2
-         * Z18 -> +3
+         * Calcola l'etichetta relativa.
          */
         function getRelativeZoomLabel() {
             const relativeZoom =
@@ -541,7 +607,7 @@
 
 
         /*
-         * Aggiorna il testo e lo stato dei pulsanti.
+         * Aggiorna testo e stato dei pulsanti.
          */
         function updateZoomControls() {
             document
@@ -562,8 +628,7 @@
 
 
         /*
-         * Carica o ricarica la mappa
-         * con il livello di zoom attuale.
+         * Carica o ricarica la mappa.
          */
         function loadMapWithCurrentZoom() {
             const mapUrl =
@@ -582,7 +647,6 @@
         /*
          * Aumenta lo zoom.
          *
-         * Esempio:
          * 0 -> +1 -> +2 -> +3
          */
         function increaseMapZoom() {
@@ -598,8 +662,9 @@
         /*
          * Riduce lo zoom.
          *
-         * Il valore minimo resta sempre 0,
-         * corrispondente a Z15.
+         * +3 -> +2 -> +1 -> 0
+         *
+         * Il valore non può diventare negativo.
          */
         function decreaseMapZoom() {
             if (currentMapZoom > MIN_MAP_ZOOM) {
@@ -609,16 +674,6 @@
                 loadMapWithCurrentZoom();
             }
         }
-
-
-        /*
-         * Nasconde i parametri dall'URL del browser.
-         */
-        window.history.replaceState(
-            null,
-            null,
-            window.location.pathname
-        );
 
 
         /*
@@ -661,7 +716,7 @@
 
 
         /*
-         * Eventi dei pulsanti Zoom.
+         * Eventi dei pulsanti zoom.
          */
         document
             .getElementById('zoomInButton')
@@ -682,3 +737,39 @@
          * Pulsante Chiudi.
          */
         document
+            .getElementById('closeButton')
+            .addEventListener(
+                'click',
+                function() {
+                    window.close();
+
+                    setTimeout(
+                        function() {
+                            window.history.back();
+                        },
+                        100
+                    );
+                }
+            );
+
+
+        /*
+         * Rimuove i parametri dalla barra degli indirizzi
+         * soltanto dopo averli letti e utilizzati.
+         */
+        try {
+            window.history.replaceState(
+                null,
+                null,
+                window.location.pathname
+            );
+        } catch (error) {
+            /*
+             * Se il browser impedisce la modifica dell'URL,
+             * la pagina continua comunque a funzionare.
+             */
+        }
+    </script>
+
+</body>
+</html>
