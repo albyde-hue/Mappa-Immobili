@@ -2,20 +2,28 @@
 <html>
 <head>
     <title>Consultazione Mappa</title>
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <style>
-      body,
-      html {
+      body, html {
         margin: 0;
         padding: 0;
         height: 100%;
         overflow: hidden;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #ffffff;
+      }
+
+      /*
+       * Contenitore generale dell'intera pagina.
+       * Lo zoom viene applicato qui, così emula lo zoom del browser.
+       */
+      .page-wrapper {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        transform-origin: top left;
+        zoom: 1;
       }
 
       .map-container {
@@ -26,8 +34,7 @@
 
       /*
        * Iframe della mappa.
-       * pointer-events: none mantiene bloccati pan, touch e clic
-       * direttamente sulla mappa Google My Maps.
+       * Rimane bloccato nelle interazioni dirette.
        */
       .map-iframe {
         position: absolute;
@@ -40,8 +47,7 @@
       }
 
       /*
-       * Vetro protettivo trasparente.
-       * Parte sotto la testata e blocca le interazioni sulla mappa.
+       * Vetro protettivo: blocca pan/touch/click sulla mappa.
        */
       .glass-pane {
         position: absolute;
@@ -54,7 +60,7 @@
       }
 
       /*
-       * Pin rosso posizionato al centro dello schermo.
+       * Pin al centro.
        */
       .center-pin {
         position: absolute;
@@ -65,47 +71,91 @@
         width: 35px;
         height: 35px;
         pointer-events: none;
-        filter: drop-shadow(0px 4px 3px rgba(0, 0, 0, 0.3));
+        filter: drop-shadow(0px 4px 3px rgba(0,0,0,0.3));
       }
 
       /*
-       * Controlli Zoom personalizzati.
-       * Sono sopra il glass-pane e quindi rimangono cliccabili.
+       * Testata blu.
+       */
+      .custom-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 75px;
+        background-color: #2c3e50;
+        color: white;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        box-sizing: border-box;
+        padding: 0 15px;
+        gap: 10px;
+      }
+
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        max-width: 45%;
+        line-height: 1.15;
+        min-width: 0;
+      }
+
+      .info-id {
+        font-size: 20px;
+        font-weight: bold;
+        color: #f39c12;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .info-comune {
+        font-size: 16px;
+        font-weight: normal;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .info-localita {
+        font-size: 13px;
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-style: italic;
+      }
+
+      /*
+       * ZOOM nella barra blu, al centro.
        */
       .zoom-control {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, 28px);
-        z-index: 30;
-
         display: flex;
         align-items: center;
         gap: 8px;
-
-        padding: 5px 8px;
-        border-radius: 7px;
-
-        background: rgba(44, 62, 80, 0.94);
-        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
-
+        padding: 5px 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.10);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
         user-select: none;
+        pointer-events: auto;
+        flex: 0 0 auto;
       }
 
       .zoom-control button {
-        width: 36px;
-        height: 36px;
-
+        width: 32px;
+        height: 32px;
         padding: 0;
         border: 0;
-        border-radius: 5px;
-
+        border-radius: 6px;
         background: #ecf0f1;
         color: #2c3e50;
-
-        font-size: 25px;
-        line-height: 36px;
-
+        font-size: 22px;
+        font-weight: bold;
+        line-height: 32px;
         cursor: pointer;
         touch-action: manipulation;
       }
@@ -124,93 +174,27 @@
       }
 
       .zoom-label {
-        min-width: 48px;
-
+        min-width: 52px;
         color: #ffffff;
         font-size: 11px;
         font-weight: bold;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.6px;
         text-align: center;
       }
 
-      /*
-       * Testata personalizzata.
-       */
-      .custom-header {
-        position: absolute;
-        top: 0;
-        left: 0;
-
-        width: 100%;
-        height: 75px;
-
-        background-color: #2c3e50;
-        color: white;
-
-        z-index: 100;
-
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-
-        box-sizing: border-box;
-        padding: 0 15px;
-      }
-
-      .header-info {
-        display: flex;
-        flex-direction: column;
-
-        max-width: 70%;
-        line-height: 1.2;
-      }
-
-      .info-id {
-        font-size: 20px;
-        font-weight: bold;
-        color: #f39c12;
-      }
-
-      .info-comune {
-        font-size: 16px;
-        font-weight: normal;
-
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .info-localita {
-        font-size: 13px;
-        opacity: 0.8;
-        font-style: italic;
-
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      /*
-       * Pulsante Chiudi desktop.
-       */
       .close-btn {
         background-color: #e74c3c;
         color: white;
-
         border: none;
         padding: 8px 16px;
         border-radius: 4px;
-
         font-weight: bold;
+        cursor: pointer;
         font-size: 14px;
         text-transform: uppercase;
-
-        cursor: pointer;
-        pointer-events: auto;
-
         transition: background-color 0.2s;
+        pointer-events: auto;
+        flex: 0 0 auto;
       }
 
       .close-btn:hover {
@@ -222,274 +206,197 @@
       }
 
       /*
-       * Regole per smartphone.
+       * Su schermi stretti riduco il layout:
+       * - niente chiudi
+       * - zoom sempre visibile ma compatto
        */
       @media (max-width: 768px) {
+        .custom-header {
+          padding: 0 10px;
+        }
+
+        .header-info {
+          max-width: 58%;
+        }
+
+        .info-id {
+          font-size: 16px;
+        }
+
+        .info-comune {
+          font-size: 13px;
+        }
+
+        .info-localita {
+          font-size: 11px;
+        }
+
         .close-btn {
           display: none !important;
         }
 
-        .header-info {
-          max-width: 100%;
-        }
-
         .zoom-control {
-          gap: 5px;
-          padding: 4px 6px;
+          gap: 6px;
+          padding: 4px 8px;
         }
 
         .zoom-control button {
-          width: 40px;
-          height: 40px;
-          line-height: 40px;
+          width: 34px;
+          height: 34px;
+          line-height: 34px;
         }
       }
     </style>
 </head>
-
 <body>
-    <div class="map-container">
+    <div class="page-wrapper" id="pageWrapper">
+      <div class="map-container">
 
-      <!-- Testata -->
-      <div class="custom-header">
-        <div class="header-info">
-          <span class="info-id" id="displayId">
-            ID: N/D
-          </span>
+        <!-- Testata -->
+        <div class="custom-header">
+          <div class="header-info">
+            <span class="info-id" id="displayId">ID: N/D</span>
+            <span class="info-comune" id="displayComune">Comune: N/D</span>
+            <span class="info-localita" id="displayLocalita">Località: N/D</span>
+          </div>
 
-          <span class="info-comune" id="displayComune">
-            Comune: N/D
-          </span>
+          <!-- ZOOM al centro della barra blu -->
+          <div class="zoom-control" aria-label="Controlli zoom pagina">
+            <button id="zoomOutButton" type="button" aria-label="Riduci zoom" title="Riduci zoom">−</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button id="zoomInButton" type="button" aria-label="Aumenta zoom" title="Aumenta zoom">+</button>
+          </div>
 
-          <span class="info-localita" id="displayLocalita">
-            Località: N/D
-          </span>
+          <button class="close-btn" id="closeButton" type="button">CHIUDI</button>
         </div>
 
-        <button
-          class="close-btn"
-          id="closeButton"
-          type="button">
-          CHIUDI
-        </button>
+        <!-- Vetro protettivo -->
+        <div class="glass-pane"></div>
+
+        <!-- Pin centrale -->
+        <div class="center-pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="#DB4437" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        </div>
+
+        <!-- Mappa -->
+        <iframe id="googleMap" class="map-iframe" title="Mappa del patrimonio immobiliare" src=""></iframe>
+
       </div>
-
-      <!-- Vetro protettivo: blocca le interazioni sulla mappa -->
-      <div class="glass-pane"></div>
-
-      <!-- Pin centrale -->
-      <div
-        class="center-pin"
-        aria-hidden="true">
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="#DB4437"
-          xmlns="http://www.w3.org/2000/svg">
-
-          <path
-            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-          />
-        </svg>
-      </div>
-
-      <!-- Controlli Zoom -->
-      <div
-        class="zoom-control"
-        aria-label="Controlli zoom mappa">
-
-        <button
-          id="zoomOutButton"
-          type="button"
-          aria-label="Riduci zoom"
-          title="Riduci zoom">
-          −
-        </button>
-
-        <span class="zoom-label">
-          ZOOM
-        </span>
-
-        <button
-          id="zoomInButton"
-          type="button"
-          aria-label="Aumenta zoom"
-          title="Aumenta zoom">
-          +
-        </button>
-      </div>
-
-      <!-- Mappa Google My Maps -->
-      <iframe
-        id="googleMap"
-        class="map-iframe"
-        title="Mappa del patrimonio immobiliare"
-        src="">
-      </iframe>
-
     </div>
 
     <script>
-        /*
-         * 1. Lettura dei parametri passati da AppSheet
-         */
         const urlParams = new URLSearchParams(window.location.search);
+        const lat = urlParams.get('lat') || '39.511889';
+        const lng = urlParams.get('lng') || '8.547901';
+        const idVal = urlParams.get('id') || 'N/D';
+        const comuneVal = urlParams.get('comune') || 'N/D';
+        const localitaVal = urlParams.get('localita') || 'N/D';
 
-        const lat =
-          urlParams.get('lat') || '39.511889';
-
-        const lng =
-          urlParams.get('lng') || '8.547901';
-
-        const idVal =
-          urlParams.get('id') || 'N/D';
-
-        const comuneVal =
-          urlParams.get('comune') || 'N/D';
-
-        const localitaVal =
-          urlParams.get('localita') || 'N/D';
-
+        const myMapsId = '1lQVisgwxED-JnABZDTxeDWWy5c52AdA';
+        const googleMap = document.getElementById('googleMap');
 
         /*
-         * 2. Configurazione dello zoom
+         * Zoom pagina/browser emulato.
+         * 1.0 = 100%
+         * 1.1 = 110%
+         * 0.9 = 90%
          */
-        const MIN_ZOOM = 1;
-        const MAX_ZOOM = 21;
+        const MIN_PAGE_ZOOM = 0.75;
+        const MAX_PAGE_ZOOM = 1.75;
+        const ZOOM_STEP = 0.10;
 
-        let currentZoom = Number.parseInt(
-          urlParams.get('zoom') || '18',
-          10
-        );
+        let pageZoom = 1.0;
 
-        if (!Number.isFinite(currentZoom)) {
-          currentZoom = 18;
+        function applyPageZoom() {
+          const wrapper = document.getElementById('pageWrapper');
+
+          /*
+           * Prova prima con CSS zoom.
+           * Se il browser non lo supporta, usa transform scale.
+           */
+          wrapper.style.zoom = pageZoom;
+          wrapper.style.transform = 'scale(' + pageZoom + ')';
+          wrapper.style.width = (100 / pageZoom) + 'vw';
+          wrapper.style.height = (100 / pageZoom) + 'vh';
+
+          document.getElementById('zoomLabel').innerText =
+            Math.round(pageZoom * 100) + '%';
+
+          document.getElementById('zoomOutButton').disabled =
+            pageZoom <= MIN_PAGE_ZOOM;
+
+          document.getElementById('zoomInButton').disabled =
+            pageZoom >= MAX_PAGE_ZOOM;
         }
 
-        currentZoom = Math.min(
-          MAX_ZOOM,
-          Math.max(MIN_ZOOM, currentZoom)
-        );
+        function changePageZoom(delta) {
+          const nextZoom = Math.min(
+            MAX_PAGE_ZOOM,
+            Math.max(MIN_PAGE_ZOOM, pageZoom + delta)
+          );
 
+          if (nextZoom !== pageZoom) {
+            pageZoom = Math.round(nextZoom * 100) / 100;
+            applyPageZoom();
+          }
+        }
 
-        /*
-         * 3. Nasconde i parametri dall'URL del browser
-         */
-        window.history.replaceState(
-          null,
-          null,
-          window.location.pathname
-        );
-
-
-        /*
-         * 4. Identificativo della mappa Google My Maps
-         */
-        const myMapsId =
-          '1lQVisgwxED-JnABZDTxeDWWy5c52AdA';
-
-        const googleMap =
-          document.getElementById('googleMap');
-
-
-        /*
-         * 5. Caricamento della mappa
-         *
-         * La mappa viene ricaricata cambiando il parametro z.
-         * In questo modo lo zoom funziona anche se la mappa
-         * rimane completamente bloccata alle interazioni.
-         */
         function loadMap() {
           const mapUrl =
             'https://www.google.com/maps/d/embed' +
             '?mid=' + encodeURIComponent(myMapsId) +
             '&ll=' + encodeURIComponent(lat + ',' + lng) +
-            '&z=' + currentZoom;
+            '&z=18';
 
           googleMap.src = mapUrl;
-
-          document.getElementById('zoomOutButton').disabled =
-            currentZoom <= MIN_ZOOM;
-
-          document.getElementById('zoomInButton').disabled =
-            currentZoom >= MAX_ZOOM;
         }
 
+        window.history.replaceState(null, null, window.location.pathname);
 
-        /*
-         * 6. Modifica dello zoom
-         */
-        function changeZoom(amount) {
-          const nextZoom = Math.min(
-            MAX_ZOOM,
-            Math.max(MIN_ZOOM, currentZoom + amount)
-          );
-
-          if (nextZoom !== currentZoom) {
-            currentZoom = nextZoom;
-            loadMap();
-          }
-        }
-
-
-        /*
-         * 7. Caricamento iniziale
-         */
         loadMap();
 
+        document.getElementById('displayId').innerText = 'ID: ' + idVal;
+        document.getElementById('displayComune').innerText = comuneVal;
 
-        /*
-         * 8. Eventi dei pulsanti Zoom
-         */
-        document
-          .getElementById('zoomOutButton')
-          .addEventListener('click', function() {
-            changeZoom(-1);
-          });
-
-        document
-          .getElementById('zoomInButton')
-          .addEventListener('click', function() {
-            changeZoom(1);
-          });
-
-
-        /*
-         * 9. Valorizzazione della testata
-         */
-        document.getElementById('displayId').innerText =
-          'ID: ' + idVal;
-
-        document.getElementById('displayComune').innerText =
-          comuneVal;
-
-
-        /*
-         * 10. Gestione del campo Località
-         */
-        if (
-          localitaVal !== 'N/D' &&
-          localitaVal.trim() !== ''
-        ) {
-          document.getElementById('displayLocalita').innerText =
-            localitaVal;
+        if (localitaVal !== 'N/D' && localitaVal.trim() !== '') {
+          document.getElementById('displayLocalita').innerText = localitaVal;
         } else {
-          document.getElementById('displayLocalita').style.display =
-            'none';
+          document.getElementById('displayLocalita').style.display = 'none';
         }
 
+        document.getElementById('zoomOutButton').addEventListener('click', function() {
+          changePageZoom(-ZOOM_STEP);
+        });
+
+        document.getElementById('zoomInButton').addEventListener('click', function() {
+          changePageZoom(ZOOM_STEP);
+        });
 
         /*
-         * 11. Pulsante Chiudi
+         * Anche la rotellina con CTRL può agire sullo zoom pagina.
          */
-        document.getElementById('closeButton').onclick =
-          function() {
-            window.close();
+        window.addEventListener('wheel', function(e) {
+          if (!e.ctrlKey) return;
 
-            setTimeout(function() {
-              window.history.back();
-            }, 100);
-          };
+          e.preventDefault();
+
+          if (e.deltaY < 0) {
+            changePageZoom(ZOOM_STEP);
+          } else {
+            changePageZoom(-ZOOM_STEP);
+          }
+        }, { passive: false });
+
+        document.getElementById('closeButton').onclick = function() {
+          window.close();
+          setTimeout(function() {
+            window.history.back();
+          }, 100);
+        };
+
+        applyPageZoom();
     </script>
 </body>
 </html>
